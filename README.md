@@ -20,3 +20,19 @@ npm install express body-parser mongoose bcryptjs jsonwebtoken express-validator
 # how to use
 git clone this repo
 npm i
+
+# how to run
+node app.js
+
+# database schema
+CREATE DATABASE IF NOT EXISTS hospital_db;
+
+USE hospital_db;
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('doctor', 'admin', 'patient') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
