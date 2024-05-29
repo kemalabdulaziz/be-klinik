@@ -13,6 +13,8 @@ npm i crypto-js
 npm i jsonwebtoken
 npm i assert
 npm install debug
+npm install express body-parser mongoose bcryptjs jsonwebtoken express-validator
+
 
 
 # how to use
