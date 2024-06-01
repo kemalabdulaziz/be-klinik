@@ -1,26 +1,7 @@
-const express = require('express');
-const { check } = require('express-validator');
-const { registerUser, loginUser } = require('../controllers/authController');
-
+const express = require("express");
 const router = express.Router();
+const authController = require("../controllers/authController");
 
-router.post(
-    '/register',
-    [
-        check('email', 'Please include a valid email').isEmail(),
-        check('password', 'Password is required').isLength({ min: 6 }),
-        check('role', 'Role is required').not().isEmpty()
-    ],
-    registerUser
-);
-
-router.post(
-    '/login',
-    [
-        check('email', 'Please include a valid email').isEmail(),
-        check('password', 'Password is required').exists()
-    ],
-    loginUser
-);
+router.post("/register", authController.registerUser);
 
 module.exports = router;

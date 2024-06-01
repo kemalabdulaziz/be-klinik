@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 const createDokter = async (req, res) => {
   const { str, nama, gender, email, noHP, spesialist, password, confirm_password, pengalaman } = req.body;
 
-  if (!str || !nama || !gender || !email || !noHP || !spesialist || !password || !confirm_password || !pengalaman) {
+  if (!nama || !gender || !email || !noHP || !password || !confirm_password) {
     return res.status(400).json({ error: "Semua kolom harus diisi" });
   }
 
