@@ -1,21 +1,63 @@
-const db = require('../config/db');
-const bcrypt = require('bcryptjs');
+const { Sequelize, DataTypes } = require("sequelize");
+const db = require("../config/db");
 
-const createUser = async (email, password, role) => {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const [result] = await db.execute(
-        'INSERT INTO users (email, password, role) VALUES (?, ?, ?)',
-        [email, hashedPassword, role]
-    );
-    return result;
-};
+const Auth = db.define(
+  "auth",
+  {
+    id_user: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    gender: {
+      type: DataTypes.ENUM("male", "female"),
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      validate: {
+        isEmail: true,
+      },
+    },
+    role: {
+      type: DataTypes.ENUM("patient", "doctor", "admin"),
+      allowNull: true,
+    },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    spesialist: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    experience: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    address: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: Sequelize.NOW,
+    },
+  },
+  {
+    tableName: "auth",
+    timestamps: false,
+  }
+);
 
-const findUserByEmail = async (email) => {
-    const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
-    return rows[0];
-};
-
-module.exports = {
-    createUser,
-    findUserByEmail
-};
+module.exports = Auth;

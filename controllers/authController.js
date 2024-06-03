@@ -1,60 +1,67 @@
-const { validationResult } = require("express-validator");
-const User = require("../models/user");
-const generateToken = require("../utils/generateToken");
-const bcrypt = require("bcryptjs");
-const db = require("../config/db");
+const Auth = require("../models/user");
+const argon2 = require("argon2");
 
-const registerUser = async (req, res) => {
-  const { id_user, name, email, /*gender*/ phone, spesialist, password, confirm_password, experience, address, role } = req.body;
-  const defaultRole = "patient";
-  const gender = "male"; //sementara
+const login = async (req, res) => {
+  const user = await Auth.findOne({
+    where: {
+      email: req.body.email,
+    },
+  });
+  if (!user) return res.status(404).json({ msg: "User Tidak Ditemukan" });
+  const match = await argon2.verify(user.password, req.body.password);
+  if (!match) return res.status(400).json({ msg: "Wrong Password" });
+  req.session.userId = user.id_user;
+  const id_user = user.id_user;
+  const name = user.name;
+  const email = user.email;
+  const gender = user.gender;
+  const role = user.role;
+  res.status(200).json({ id_user, name, email, gender, role });
+};
 
-  if (!name || !phone || !email || /*gender||*/ !password || !confirm_password) {
-    return res.status(400).json({ error: "Semua kolom harus diisi" });
-  }
-
-  if (password !== confirm_password) {
-    return res.status(400).json({ error: "Password dan Konfirmasi Password tidak sesuai" });
-  }
-
-  const userRole = role || defaultRole;
-
-  const hashedPassword = bcrypt.hashSync(password, 8);
-  const query = "INSERT INTO auth (id_user, name, gender, email, role, phone, spesialist, password, experience, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
+const registrasi = async (req, res) => {
+  const { name, phone, email, gender, password, confirm_pass, role } = req.body;
+  if (password !== confirm_pass) return res.status(400).json({ msg: "Password Dan Confirm Password Tidak Cocok" });
+  const hashPassword = await argon2.hash(password);
   try {
-    const [result] = await db.query(query, [id_user, name, gender, email, userRole, phone, spesialist, hashedPassword, experience, address]);
-    console.log("Pengguna berhasil ditambahkan");
-    res.status(201).json({ message: "Pengguna berhasil ditambahkan" });
-  } catch (err) {
-    console.error("Gagal menambahkan pengguna:", err);
-    res.status(500).json({ error: "Kesalahan Internal Server" });
+    await Auth.create({
+      name: name,
+      phone: phone,
+      email: email,
+      gender: gender,
+      password: hashPassword,
+      role: role,
+    });
+    res.status(201).json({ msg: "Register Berhasil" });
+  } catch (error) {
+    res.status(400).json({ msg: error.message });
   }
 };
 
-const loginUser = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+const profile = async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ msg: "Mohon Login Ke Akun Anda" });
   }
+  const user = await Auth.findOne({
+    attributes: ["id_user", "name", "email", "gender", "role"],
+    where: {
+      id_user: req.session.userId,
+    },
+  });
+  if (!user) return res.status(404).json({ msg: "User Tidak Ditemukan" });
+  res.status(200).json(user);
+};
 
-  const { email, password } = req.body;
-
-  try {
-    const user = await User.findUserByEmail(email);
-
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const token = generateToken(user.id, user.role);
-      res.json({ token, role: user.role });
-    } else {
-      res.status(401).json({ message: "Invalid email or password" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+const logout = (req, res) => {
+  req.session.destroy((err) => {
+    if (err) return res.status(400).json({ msg: "Tidak Dapat Logout" });
+    res.status(200).json({ msg: "Anda Telah Logout" });
+  });
 };
 
 module.exports = {
-  registerUser,
-  loginUser,
+  login,
+  registrasi,
+  logout,
+  profile,
 };
